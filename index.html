@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مكتبة الروايات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f5;--ink:#1b2440;--mut:#5c6580;--card:#fff;--line:#d6dbe6;--acc:#0f8b8d}
+@media (prefers-color-scheme:dark){:root{--bg:#121726;--ink:#e8ecf7;--mut:#9aa4c0;--card:#1b2236;--line:#2b3450;--acc:#3cc4c6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Cairo',Tahoma,sans-serif;line-height:1.7}
+header{padding:48px 20px 24px;max-width:1000px;margin:auto}
+h1{font-family:'Amiri',serif;font-size:clamp(38px,8vw,72px);margin:0;line-height:1.1}
+header p{color:var(--mut);margin:8px 0 0;max-width:560px}
+.tools{max-width:1000px;margin:auto;padding:0 20px;position:sticky;top:0;background:var(--bg);z-index:5;padding-bottom:10px;padding-top:10px}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 14px;border-radius:99px;cursor:pointer}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.count{max-width:1000px;margin:6px auto;padding:0 20px;color:var(--mut);font-size:14px}
+main{max-width:1000px;margin:auto;padding:0 20px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.book{background:var(--card);border:1px solid var(--line);border-radius:6px;border-inline-start:10px solid var(--c);padding:14px 16px}
+.book h3{margin:0;font-family:'Amiri',serif;font-size:22px;line-height:1.3}
+.book .au{color:var(--mut);margin:2px 0 8px}
+.book .meta{font-size:13px;color:var(--mut)}
+.book a{color:var(--acc);font-size:14px;text-decoration:none;font-weight:600}
+.book a:hover{text-decoration:underline}
+.empty{grid-column:1/-1;text-align:center;color:var(--mut);padding:40px}
+details{max-width:1000px;margin:0 auto 60px;padding:0 20px}
+summary{cursor:pointer;font-weight:800;font-size:18px}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px}
+button.add{font:inherit;font-weight:600;background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px;cursor:pointer}
+.rb{font:inherit;font-size:14px;font-weight:600;background:var(--acc);color:#fff;border:0;border-radius:8px;padding:2px 12px;cursor:pointer;margin-inline-end:10px}
+#rd{position:fixed;inset:0;background:var(--bg);z-index:20;display:none;flex-direction:column}
+#rd.on{display:flex}
+.rbar{display:flex;gap:8px;align-items:center;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line)}
+.rbar b{flex:1;font-family:'Amiri',serif;font-size:20px}
+.rbar button,.rbar label{font:inherit;font-size:14px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:2px 12px;cursor:pointer}
+#rt{flex:1;overflow:auto;padding:24px 20px 60px;max-width:700px;margin:0 auto;width:100%;white-space:pre-wrap;font-family:'Amiri',serif;font-size:22px;line-height:2.1}
+.note{color:var(--mut);font-family:'Cairo',sans-serif;font-size:16px;line-height:1.8;white-space:normal}
+</style>
+</head>
+<body>
+<header>
+  <h1>مكتبة الروايات</h1>
+  <p>روايات مصرية وعربية وعالمية في مكان واحد. دوّر بالاسم أو الكاتب، أو ضيف الرواية اللي مش لاقيها.</p>
+</header>
+
+<div class="tools">
+  <input id="q" type="search" placeholder="ابحث باسم الرواية أو الكاتب...">
+  <div class="chips" id="origins"></div>
+  <div class="chips" id="genres"></div>
+</div>
+<div class="count" id="count"></div>
+<main id="list"></main>
+
+<details>
+  <summary>ضيف رواية جديدة</summary>
+  <form id="f">
+    <input name="t" placeholder="اسم الرواية" required>
+    <input name="a" placeholder="الكاتب" required>
+    <input name="y" type="number" placeholder="السنة">
+    <select name="o"><option>مصرية</option><option>عربية</option><option>عالمية</option></select>
+    <input name="g" placeholder="النوع (مثلاً: رعب)">
+    <button class="add" type="submit">أضف الرواية</button>
+  </form>
+</details>
+
+<div id="rd" role="dialog" aria-label="القارئ">
+  <div class="rbar">
+    <b id="rn"></b>
+    <button onclick="fs(2)" aria-label="تكبير الخط">أ+</button>
+    <button onclick="fs(-2)" aria-label="تصغير الخط">أ-</button>
+    <label>رفع نص<input id="fl" type="file" accept=".txt,text/plain" hidden></label>
+    <button onclick="$('rd').classList.remove('on')">إغلاق</button>
+  </div>
+  <div id="rt" dir="auto"></div>
+</div>
+<script>
+// [العنوان, الكاتب, السنة, الأصل, النوع]
+const BOOKS=[
+["بين القصرين","نجيب محفوظ",1956,"مصرية","واقعية"],
+["أولاد حارتنا","نجيب محفوظ",1959,"مصرية","فلسفية"],
+["اللص والكلاب","نجيب محفوظ",1961,"مصرية","واقعية"],
+["ثرثرة فوق النيل","نجيب محفوظ",1966,"مصرية","واقعية"],
+["الحرافيش","نجيب محفوظ",1977,"مصرية","واقعية"],
+["الكرنك","نجيب محفوظ",1974,"مصرية","واقعية"],
+["عمارة يعقوبيان","علاء الأسواني",2002,"مصرية","واقعية"],
+["نادي السيارات","علاء الأسواني",2013,"مصرية","واقعية"],
+["يوتوبيا","أحمد خالد توفيق",2008,"مصرية","خيال علمي"],
+["في ممر الفئران","أحمد خالد توفيق",2014,"مصرية","خيال علمي"],
+["ما وراء الطبيعة: أسطورة مصاص الدماء","أحمد خالد توفيق",1993,"مصرية","رعب"],
+["الأيام","طه حسين",1929,"مصرية","سيرة ذاتية"],
+["دعاء الكروان","طه حسين",1934,"مصرية","رومانسية"],
+["الحرام","يوسف إدريس",1959,"مصرية","واقعية"],
+["لا أنام","إحسان عبد القدوس",1951,"مصرية","رومانسية"],
+["أنا حرة","إحسان عبد القدوس",1952,"مصرية","رومانسية"],
+["الأرض","عبد الرحمن الشرقاوي",1954,"مصرية","واقعية"],
+["زينب","محمد حسين هيكل",1913,"مصرية","رومانسية"],
+["عودة الروح","توفيق الحكيم",1933,"مصرية","تاريخية"],
+["عزازيل","يوسف زيدان",2008,"مصرية","تاريخية"],
+["ثلاثية غرناطة","رضوى عاشور",1994,"مصرية","تاريخية"],
+["واحة الغروب","بهاء طاهر",2006,"مصرية","تاريخية"],
+["موسم الهجرة إلى الشمال","الطيب صالح",1966,"عربية","واقعية"],
+["رجال في الشمس","غسان كنفاني",1963,"عربية","واقعية"],
+["ذاكرة الجسد","أحلام مستغانمي",1993,"عربية","رومانسية"],
+["الأسود يليق بك","أحلام مستغانمي",2012,"عربية","رومانسية"],
+["مدن الملح","عبد الرحمن منيف",1984,"عربية","تاريخية"],
+["ساق البامبو","سعود السنعوسي",2012,"عربية","واقعية"],
+["الجريمة والعقاب","فيودور دوستويفسكي",1866,"عالمية","فلسفية"],
+["الإخوة كارامازوف","فيودور دوستويفسكي",1880,"عالمية","فلسفية"],
+["الحرب والسلام","ليو تولستوي",1869,"عالمية","تاريخية"],
+["آنا كارنينا","ليو تولستوي",1878,"عالمية","رومانسية"],
+["البؤساء","فيكتور هوغو",1862,"عالمية","تاريخية"],
+["مئة عام من العزلة","غابرييل غارسيا ماركيز",1967,"عالمية","فانتازيا"],
+["دون كيخوتي","ميغيل دي سرفانتس",1605,"عالمية","واقعية"],
+["كبرياء وهوى","جين أوستن",1813,"عالمية","رومانسية"],
+["1984","جورج أورويل",1949,"عالمية","خيال علمي"],
+["الغريب","ألبير كامو",1942,"عالمية","فلسفية"],
+["المحاكمة","فرانتس كافكا",1925,"عالمية","فلسفية"],
+["الشيخ والبحر","إرنست همنغواي",1952,"عالمية","واقعية"],
+["اسم الوردة","أمبرتو إيكو",1980,"عالمية","بوليسية"],
+["جريمة في قطار الشرق السريع","أغاثا كريستي",1934,"عالمية","بوليسية"],
+["دراكولا","برام ستوكر",1897,"عالمية","رعب"],
+["فرانكنشتاين","ماري شيلي",1818,"عالمية","رعب"],
+["الغابة النرويجية","هاروكي موراكامي",1987,"عالمية","رومانسية"],
+["الخيميائي","باولو كويلو",1988,"عالمية","فلسفية"],
+["ظل الريح","كارلوس رويس زافون",2001,"عالمية","بوليسية"],
+["سيد الخواتم","ج. ر. ر. تولكين",1954,"عالمية","فانتازيا"],
+["أرض زيكولا","عمرو عبد الحميد",2010,"مصرية","فانتازيا"],
+["أماريتا (أرض زيكولا 2)","عمرو عبد الحميد",2016,"مصرية","فانتازيا"],
+["وادي الذئاب المنسية (أرض زيكولا 3)","عمرو عبد الحميد",2023,"مصرية","فانتازيا"],
+["واحة اليعقوب","عمرو عبد الحميد","","مصرية","فانتازيا"],
+["مينتو","عمرو عبد الحميد","","مصرية","فانتازيا"],
+["قواعد جارتين","عمرو عبد الحميد","","مصرية","فانتازيا"],
+["صانع الظلام","تامر إبراهيم",2012,"مصرية","رعب"],
+["الليلة الثالثة والعشرون","تامر إبراهيم",2012,"مصرية","رعب"],
+["منزل السيدة البدينة","تامر إبراهيم","","مصرية","رعب"],
+["الجثة الخامسة","حسين السيد","","مصرية","رعب"],
+["موعد مع أمير الظلام","خالد أمين","","مصرية","رعب"],
+["الفيل الأزرق","أحمد مراد",2012,"مصرية","بوليسية"],
+["1919","أحمد مراد",2014,"مصرية","تاريخية"],
+["تراب الماس","أحمد مراد",2010,"مصرية","بوليسية"],
+["فيرتيجو","أحمد مراد",2007,"مصرية","بوليسية"],
+["فرانكشتاين في بغداد","أحمد سعداوي",2013,"عربية","رعب"],
+["الطلياني","شكري المبخوت",2014,"عربية","واقعية"],
+["قناع بلون السماء","باسم خندقجي",2023,"عربية","واقعية"],
+["الخروج من البئر","علياء هيكل","","عربية","واقعية"],
+["مواليد حديقة الحيوان","أشرف العشماوي","","مصرية","واقعية"],
+["ذبابة زرقاء","نهى داود","","مصرية","واقعية"],
+["السيمفونية الأخيرة","أشرف العشماوي",2026,"مصرية","تاريخية"],
+["السماء الثامنة","محمد سلماوي",2026,"مصرية","واقعية"],
+["ثلاثية الغربة","عزت القمحاوي",2026,"مصرية","فلسفية"],
+["ورثة التيه","علياء هيكل",2026,"عربية","واقعية"],
+["نبأ أرض الشمال","أسامة عبد الرءوف الشاذلي",2026,"مصرية",""],
+["الجلاد تحت جلدي","عماد رشاد عثمان",2026,"مصرية",""],
+["لأننا لم نكن بخير","محمد طارق",2026,"عربية",""],
+["العالم أحد مقتنياتي","عبد الرحيم كمال",2026,"مصرية",""],
+["رسائل من عمر بن الخطاب","أدهم شرقاوي",2025,"عربية",""],
+["مكتبة منتصف الليل","مات هيج",2020,"عالمية","فانتازيا"],
+["بيرانيزي","سوزانا كلارك",2020,"عالمية","فانتازيا"],
+["مشروع هيل ماري","آندي وير",2021,"عالمية","خيال علمي"],
+["كلارا والشمس","كازو إيشيغورو",2021,"عالمية","خيال علمي"],
+["غدًا وغدًا وغدًا","غابرييل زيفين",2022,"عالمية","واقعية"],
+["ديمون كوبرهيد","باربرا كينغسولفر",2022,"عالمية","واقعية"],
+["الجناح الرابع","ريبيكا ياروس",2023,"عالمية","فانتازيا"],
+["مدار","سامانثا هارفي",2023,"عالمية","خيال علمي"],
+["إنترميتسو","سالي رووني",2024,"عالمية","رومانسية"]
+];
+const $=id=>document.getElementById(id);
+let store=[];
+try{store=JSON.parse(localStorage.getItem('myNovels')||'[]')}catch(e){}
+const all=()=>BOOKS.concat(store);
+let origin='الكل',genre='الكل',modern=false;
+const hue=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function chips(el,vals,cur,set){
+  el.innerHTML='';
+  ['الكل',...vals].forEach(v=>{
+    const b=document.createElement('button');
+    b.className='chip'+(v===cur?' on':'');b.textContent=v;
+    b.onclick=()=>{set(v);render()};el.appendChild(b);
+  });
+}
+function render(){
+  const q=$('q').value.trim();
+  const uniq=a=>[...new Set(a)];
+  chips($('origins'),['مصرية','عربية','عالمية'],origin,v=>origin=v);
+  const m=document.createElement('button');
+  m.className='chip'+(modern?' on':'');m.textContent='حديثة (من 2000)';
+  m.onclick=()=>{modern=!modern;render()};$('origins').appendChild(m);
+  chips($('genres'),uniq(all().map(b=>b[4]).filter(Boolean)),genre,v=>genre=v);
+  const r=all().filter(b=>(origin==='الكل'||b[3]===origin)&&(genre==='الكل'||b[4]===genre)&&(!modern||+b[2]>=2000)&&(!q||(b[0]+' '+b[1]).includes(q)));
+  $('count').textContent=r.length+' رواية';
+  $('list').innerHTML=r.length?r.map(b=>`<article class="book" style="--c:hsl(${hue(b[0])} 55% 45%)">
+    <h3>${esc(b[0])}</h3><div class="au">${esc(b[1])}</div>
+    <div class="meta">${esc(b[3])}${b[2]?' • '+esc(b[2]):''}${b[4]?' • '+esc(b[4]):''}</div>
+    <button class="rb" onclick="openR(${all().indexOf(b)})">اقرأ هنا</button><a href="https://www.google.com/search?q=${encodeURIComponent('رواية '+b[0]+' '+b[1])}" target="_blank" rel="noopener">اقرأ عنها</a>
+  </article>`).join(''):'<div class="empty">مفيش نتايج. جرّب كلمة تانية أو ضيف الرواية بنفسك.</div>';
+}
+$('q').oninput=render;
+$('f').onsubmit=e=>{
+  e.preventDefault();
+  const d=new FormData(e.target);
+  store.push([d.get('t'),d.get('a'),d.get('y'),d.get('o'),d.get('g')]);
+  try{localStorage.setItem('myNovels',JSON.stringify(store))}catch(x){}
+  e.target.reset();render();
+};
+let TX={"كبرياء وهوى":"It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.\n\nHowever little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.\n\n(مقتطف تجريبي من النص الأصلي الإنجليزي، وهو ملك عام. ارفع النص الكامل من زر «رفع نص».)"};
+try{Object.assign(TX,JSON.parse(localStorage.getItem('novelTexts')||'{}'))}catch(e){}
+let cur='',size=22;
+function showR(){
+  const t=TX[cur],el=$('rt');
+  el.style.fontSize=size+'px';
+  if(t){el.className='';el.textContent=t}
+  else{el.className='note';el.textContent='النص الكامل للرواية دي مش مضاف لسه. دوس «رفع نص» وارفع ملف .txt للرواية، وهيتحفظ في متصفحك وتقراها هنا في أي وقت.'}
+}
+function openR(i){cur=all()[i][0];$('rn').textContent=cur;showR();$('rd').classList.add('on');$('rt').scrollTop=0}
+function fs(d){size=Math.max(14,Math.min(40,size+d));$('rt').style.fontSize=size+'px'}
+$('fl').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{TX[cur]=r.result;
+    try{const o=JSON.parse(localStorage.getItem('novelTexts')||'{}');o[cur]=r.result;localStorage.setItem('novelTexts',JSON.stringify(o))}
+    catch(x){alert('النص كبير ومتحفظش في المتصفح، بس هيفضل متاح لحد ما تقفل الصفحة.')}
+    showR();e.target.value=''};
+  r.readAsText(f,'UTF-8');
+};
+render();
+</script>
+</body>
+</html>
